@@ -1,7 +1,7 @@
 <?php
 /**
- * Date: 2019-11-29
- * Time: 15:43
+ * Date: 2019-09-26
+ * Time: 17:23
  */
 
 namespace Moon\Cache;
@@ -9,7 +9,7 @@ namespace Moon\Cache;
 
 use Predis\Client;
 /**
- * Class RedisCache
+ * Class Redis
  *
  * @see \Predis\ClientInterface
  * @method int    del(array|string $keys)
@@ -160,9 +160,9 @@ use Predis\Client;
  * @method array  georadius($key, $longitude, $latitude, $radius, $unit, array $options = null)
  * @method array  georadiusbymember($key, $member, $radius, $unit, array $options = null)
  *
- * @package App\Components
+ * @package Moon\Cache
  */
-class RedisCache
+class Redis
 {
     /** @var  Client $client */
     protected $client;
@@ -170,15 +170,17 @@ class RedisCache
     public $port;
     public $password;
     public $database;
+
     public function __construct($host = 'localhost', $port = 6379, $password = null, $database = 0)
     {
         $this->host = $host;
         $this->port = $port;
-        $this->password = strlen($password) > 0 ? $password : null;
+        $this->password = $password;
         $this->database = intval($database);
     }
+
     /**
-     * 获取一个Predis\Client实例
+     * get a Predis\Client instance
      * @return Client
      */
     public function getClient()
@@ -203,12 +205,14 @@ class RedisCache
         ], $options);
         return $this->client;
     }
+
     public function __call($name, $arguments)
     {
         return call_user_func_array([$this->getClient(), $name], $arguments);
     }
+
     /**
-     * 数据缓存 自动序列化 反序列化
+     * Cache mixd data, auto serialize and unserialize
      * @param string $key
      * @param int $lifetime
      * @param callable $getDataFunc
@@ -235,7 +239,7 @@ class RedisCache
                 $serialize = true;
             }
             if ($serialize) {
-                //添加尾缀 _/_/<@s@>\_\_
+                //add suffix _/_/<@s@>\_\_
                 $serialize_result = serialize($result) . '_/_/<@s@>\_\_';
                 $client->setex($key, $lifetime, $serialize_result);
             } else {
@@ -245,8 +249,9 @@ class RedisCache
         }
         return $result;
     }
+
     /**
-     * 通过tag批量删除
+     * batch delete by tag
      * @param string $tag
      */
     public function delKeysByTag($tag)
@@ -260,7 +265,7 @@ class RedisCache
         }
     }
     /**
-     * 给key打tag
+     * Tag the key
      * @param string $tag
      * @param string $key
      * @param int $lifetime
