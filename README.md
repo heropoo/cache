@@ -6,7 +6,8 @@ A cache component.
 - redis
 
 ## TODO
-support other cache media
+- [ ] support redis cluster
+- [ ] support other cache media
 
 ## usage
 ```php
