@@ -1,0 +1,24 @@
+{
+    "name": "heropoo/cache",
+    "description": "cache component",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "cache", "redis"
+    ],
+    "authors": [
+        {
+            "name": "Heropoo",
+            "email": "aiyouyou1000@163.com"
+        }
+    ],
+    "require": {
+        "php": ">= 5.4",
+        "predis/predis": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Moon\\Cache\\": ""
+        }
+    }
+}
