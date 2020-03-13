@@ -8,6 +8,7 @@ namespace Moon\Cache;
 
 
 use Predis\Client;
+
 /**
  * Class Redis
  *
@@ -136,7 +137,7 @@ use Predis\Client;
  * @method mixed  evalsha($script, $numkeys, $keyOrArg1 = null, $keyOrArgN = null)
  * @method mixed  script($subcommand, $argument = null)
  * @method mixed  auth($password)
- * @method string echo($message)
+ * @method string echo ($message)
  * @method mixed  ping($message = null)
  * @method mixed  select($database)
  * @method mixed  bgrewriteaof()
@@ -225,19 +226,29 @@ class Redis
         $client = $this->getClient();
         $result = $client->get($key);
         if (!is_null($result) && $reset != true) {
+
             $len = strlen($result);
-            if ($len >= 19 && substr($result, -13) === '_/_/<@s@>\_\_') {  //echo serialize([]);  => a:0:{} 6+13=19
+
+            /**
+             * serialize(1);    =>  i:1;    4+13=17
+             * serialize(true); =>  i:1;    4+13=17
+             * serialize([]);   =>  a:0:{}  6+13=19
+             */
+            if ($len >= 17 && substr($result, -13) === '_/_/<@s@>\_\_') {
                 $result = substr($result, 0, $len - 13);
                 return unserialize($result);
             }
+
             return $result;
         }
+
         $result = call_user_func($getDataFunc);
-        if (!is_null($result) && $result !== false) {
+        if (!is_null($result)) { // except null
             $serialize = false;
-            if (is_array($result) || is_object($result)) {
+            if (is_bool($result) || is_array($result) || is_object($result)) {
                 $serialize = true;
             }
+
             if ($serialize) {
                 //add suffix _/_/<@s@>\_\_
                 $serialize_result = serialize($result) . '_/_/<@s@>\_\_';
@@ -245,7 +256,10 @@ class Redis
             } else {
                 $client->setex($key, $lifetime, $result);
             }
-            $this->saveTagKey($tag, $key, $lifetime);
+
+            if (!is_null($tag) && strlen($tag) > 0) {
+                $this->saveTagKey($tag, $key, $lifetime);
+            }
         }
         return $result;
     }
@@ -264,6 +278,7 @@ class Redis
             $client->del($tag_key);
         }
     }
+
     /**
      * Tag the key
      * @param string $tag
