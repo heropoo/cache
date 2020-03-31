@@ -263,7 +263,7 @@ class Redis
         }
         return $result;
     }
-
+    
     /**
      * batch delete by tag
      * @param string $tag
@@ -274,8 +274,10 @@ class Redis
         $tag_key = 'TagSet[' . $tag . ']';
         $keys = $client->smembers($tag_key);
         if ($keys) {
-            $client->del($keys);
-            $client->del($tag_key);
+            $client->transaction(function ($tx) use ($keys, $tag_key) {
+                $tx->del($keys);
+                $tx->del($tag_key);
+            });
         }
     }
 
@@ -291,12 +293,36 @@ class Redis
         $tag_key = 'TagSet[' . $tag . ']';
         $max = $lifetime;
         $keys = $client->smembers($tag_key);
-        if ($keys) {
-            foreach ($keys as $k) {
-                $max = max($client->ttl($k), $max);
+
+        $client->transaction(function ($tx) use ($key, $keys, $tag_key, $max) {
+            if ($keys) {
+                foreach ($keys as $k) {
+                    $max = max($tx->ttl($k), $max);
+                }
             }
-        }
-        $client->sadd($tag_key, $key);
-        $client->expire($tag_key, $max);
+            $tx->sadd($tag_key, $key);
+            $tx->expire($tag_key, $max);
+        });
+    }
+
+    /**
+     * Get a lock
+     * @param string $key
+     * @param int $ttl
+     * @return bool
+     */
+    public function getLock($key, $ttl)
+    {
+        return (bool)$this->getClient()->set($key, 1, 'EX', $ttl, 'NX');
+    }
+
+    /**
+     * Release a lock
+     *
+     * @param string $key
+     */
+    public function releaseLock($key)
+    {
+        $this->getClient()->del($key);
     }
 }
